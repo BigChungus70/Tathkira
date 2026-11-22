@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tathkira</title>
+  </head>
+  <body>
+    <main class="app">
+      <div class="titlebar" data-tauri-drag-region>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div class="brand-copy">
+            <h1 class="title" data-i18n="app.title"></h1>
+            <p class="subtitle" data-i18n="app.subtitle"></p>
+          </div>
+        </div>
+        <div class="window-controls">
+          <button id="win-minimize" type="button" data-i18n-label="actions.hide">×</button>
+        </div>
+      </div>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2 data-i18n="sections.pool"></h2>
+          <span id="pool-count" class="count">0</span>
+        </div>
+        <button id="open-pool" type="button" class="primary wide" data-i18n="actions.managePool"></button>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="sections.timing"></h2>
+        <label class="field">
+          <span>
+            <span data-i18n="fields.interval"></span>
+            <small data-i18n="fields.minutes"></small>
+          </span>
+          <input id="interval" type="number" min="1" max="1440" step="1" />
+        </label>
+        <label class="field">
+          <span>
+            <span data-i18n="fields.onScreen"></span>
+            <small data-i18n="fields.seconds"></small>
+          </span>
+          <input id="display" type="number" min="1" max="120" step="1" />
+        </label>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="sections.position"></h2>
+        <div id="position-grid" class="position-grid">
+          <button type="button" data-position="top_left">↖</button>
+          <button type="button" data-position="top_center">↑</button>
+          <button type="button" data-position="top_right">↗</button>
+          <button type="button" data-position="middle_left">←</button>
+          <button type="button" data-position="middle_center">•</button>
+          <button type="button" data-position="middle_right">→</button>
+          <button type="button" data-position="bottom_left">↙</button>
+          <button type="button" data-position="bottom_center">↓</button>
+          <button type="button" data-position="bottom_right">↘</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 data-i18n="sections.snooze"></h2>
+        <label class="field">
+          <span>
+            <span data-i18n="fields.snoozeFor"></span>
+            <small data-i18n="fields.minutes"></small>
+          </span>
+          <input id="snooze-minutes" type="number" min="1" max="1440" step="1" value="15" />
+        </label>
+        <div class="preset-row">
+          <button type="button" data-minutes="15" data-i18n="presets.m15"></button>
+          <button type="button" data-minutes="30" data-i18n="presets.m30"></button>
+          <button type="button" data-minutes="60" data-i18n="presets.h1"></button>
+        </div>
+        <div class="button-row">
+          <button id="snooze-apply" type="button" class="primary" data-i18n="actions.snooze"></button>
+          <button id="snooze-cancel" type="button" data-i18n="actions.cancelSnooze" disabled></button>
+        </div>
+        <div id="snooze-state" class="snooze-state" role="status"></div>
+      </section>
+
+      <section class="panel">
+        <label class="field">
+          <span data-i18n="sections.language"></span>
+          <select id="language" class="language-select"></select>
+        </label>
+      </section>
+
+      <footer>
+        <span id="status" class="status" role="status"></span>
+        <button id="quit" type="button" class="quiet" data-i18n="actions.quit"></button>
+      </footer>
+    </main>
+    <script src="/i18n.js"></script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

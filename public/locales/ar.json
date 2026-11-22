@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "تذكيرة",
+    "subtitle": "تذكيرات هادئة، حسب جدولك."
+  },
+  "sections": {
+    "pool": "مجموعة الأذكار",
+    "timing": "التوقيت",
+    "snooze": "التأجيل",
+    "position": "مكان الإشعار",
+    "language": "اللغة"
+  },
+  "fields": {
+    "placeholder": "أضف ذكرًا...",
+    "interval": "الفاصل الزمني",
+    "minutes": "دقيقة",
+    "onScreen": "مدة الظهور",
+    "seconds": "ثانية",
+    "snoozeFor": "تأجيل لمدة"
+  },
+  "presets": {
+    "m15": "١٥د",
+    "m30": "٣٠د",
+    "h1": "١س"
+  },
+  "actions": {
+    "add": "إضافة",
+    "edit": "تعديل",
+    "save": "حفظ",
+    "removeShort": "إزالة",
+    "managePool": "إدارة المجموعة",
+    "snooze": "تأجيل",
+    "cancelSnooze": "إلغاء التأجيل",
+    "hide": "إخفاء",
+    "done": "تم",
+    "quit": "إغلاق"
+  },
+  "tray": {
+    "settings": "الإعدادات",
+    "snooze15": "تأجيل ١٥ دقيقة",
+    "snooze60": "تأجيل ساعة"
+  },
+  "status": {
+    "saved": "تم الحفظ",
+    "saveFailed": "فشل الحفظ: {error}",
+    "loadFailed": "تعذّر تحميل الإعدادات: {error}",
+    "snoozeFailed": "فشل التأجيل: {error}",
+    "snoozed": "تم التأجيل لمدة {minutes} دقيقة",
+    "snoozeCancelled": "تم إلغاء التأجيل",
+    "snoozeRemaining": "مؤجل — متبقي {time}",
+    "notSnoozed": "غير مؤجل",
+    "snoozeEnded": "انتهى التأجيل",
+    "emptyText": "أدخل ذكرًا أولًا"
+  }
+}

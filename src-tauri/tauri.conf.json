@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Tathkira",
+  "version": "0.1.0",
+  "identifier": "com.tathkira.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Tathkira",
+        "width": 440,
+        "height": 620,
+        "visible": false,
+        "resizable": false,
+        "center": true,
+        "decorations": false,
+        "skipTaskbar": true
+      },
+      {
+        "label": "notification",
+        "url": "/notification.html",
+        "width": 350,
+        "height": 80,
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": true,
+        "focus": false,
+        "focusable": false
+      },
+      {
+        "label": "pool",
+        "title": "Tathkira",
+        "url": "/pool.html",
+        "width": 440,
+        "height": 520,
+        "visible": false,
+        "resizable": false,
+        "center": true,
+        "decorations": false,
+        "skipTaskbar": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
+  }
+}
