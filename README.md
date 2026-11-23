@@ -70,3 +70,11 @@ Additional localizations are welcome.
 - Add the new language to `index.json`, then open a pull request.
 
 After review, proper localization additions can be pulled and merged.
+
+
+
+## Compatibility issues
+
+Currently known compatibility issues:
+
+- some Linux window managers and/or display servers: further reports and investigations are appreciated 
