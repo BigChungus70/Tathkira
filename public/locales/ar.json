@@ -8,7 +8,12 @@
     "timing": "التوقيت",
     "snooze": "التأجيل",
     "position": "مكان الإشعار",
-    "language": "اللغة"
+    "language": "اللغة",
+    "theme": "المظهر"
+  },
+  "themes": {
+    "dark": "داكن",
+    "light": "فاتح"
   },
   "fields": {
     "placeholder": "أضف ذكرًا...",

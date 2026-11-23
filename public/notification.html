@@ -5,7 +5,17 @@
     <style>
       :root {
         color-scheme: dark;
-        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, 'Geeza Pro', Roboto, Helvetica, Arial, sans-serif;
+        font-family: 'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, Tahoma, 'Geeza Pro', sans-serif;
+        --card-bg: #181a17;
+        --card-text: #f5f1e6;
+        --accent: #d2b27a;
+      }
+
+      :root[data-theme='light'] {
+        color-scheme: light;
+        --card-bg: #fffdf7;
+        --card-text: #262a24;
+        --accent: #8a6b32;
       }
 
       * {
@@ -24,49 +34,44 @@
 
       .card {
         position: absolute;
-        inset: 8px;
+        inset: 0;
         display: flex;
         align-items: center;
-        gap: 14px;
-        padding: 14px 18px;
-        color: #eaf2ee;
-        background: linear-gradient(135deg, rgba(23, 32, 38, 0.97), rgba(16, 23, 28, 0.97));
-        border: 1px solid rgba(148, 180, 168, 0.22);
-        border-radius: 16px;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(16px);
+        gap: 13px;
+        padding: 14px 16px;
+        color: var(--card-text);
+        background: var(--card-bg);
+        border: 0;
         opacity: 0;
-        transform: translateY(10px) scale(0.985);
-        transition: opacity 180ms ease, transform 220ms ease;
+        transform: translateY(6px);
+        transition: opacity 160ms ease, transform 180ms ease;
         cursor: pointer;
         user-select: none;
       }
 
       .card.visible {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
       }
 
       .accent {
-        width: 4px;
-        height: calc(100% - 16px);
-        min-height: 34px;
+        width: 3px;
+        height: calc(100% - 14px);
+        min-height: 32px;
         flex: none;
         border-radius: 999px;
-        background: linear-gradient(180deg, #8ff0c9, #34d399);
-        box-shadow: 0 0 18px rgba(52, 211, 153, 0.35);
+        background: var(--accent);
       }
 
       #text {
         flex: 1;
         min-width: 0;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         line-height: 1.5;
-        letter-spacing: 0.005em;
+        letter-spacing: 0;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
       }
     </style>
   </head>
@@ -127,24 +132,16 @@
 
         function resizeToText() {
           const api = window.__TAURI__;
-          const height = Math.max(80, Math.ceil(measureTextHeight() + 52));
-          if (!api || !api.window || !api.window.getCurrentWindow) return;
-          const windowApi = api.window.getCurrentWindow();
-          if (!windowApi.setSize) return;
-          windowApi
-            .setSize({ width: 350, height: height })
-            .then(function () {
-              if (api.core && api.core.invoke) {
-                api.core
-                  .invoke('reposition_notification', { width: 350, height: height })
-                  .catch(function () {});
-              }
-            })
-            .catch(function () {});
+          const height = Math.max(80, Math.ceil(measureTextHeight() + 36));
+          if (!api || !api.core || !api.core.invoke) return;
+          api.core.invoke('resize_notification', { height: height }).catch(function () {});
         }
 
         function show(payload) {
           if (!payload) return;
+          const theme = payload.theme === 'light' ? 'light' : 'dark';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
           const value = payload.text || '';
           const direction = textDirection(value);
           textEl.textContent = value;

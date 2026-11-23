@@ -8,7 +8,12 @@
     "timing": "Timing",
     "snooze": "Snooze",
     "position": "Notification position",
-    "language": "Language"
+    "language": "Language",
+    "theme": "Appearance"
+  },
+  "themes": {
+    "dark": "Dark",
+    "light": "Light"
   },
   "fields": {
     "placeholder": "Add a thikr...",

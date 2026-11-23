@@ -15,6 +15,8 @@ const POSITIONS: [&str; 9] = [
     "bottom_right",
 ];
 
+const THEMES: [&str; 2] = ["dark", "light"];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub texts: Vec<String>,
@@ -24,6 +26,8 @@ pub struct Config {
     pub language: String,
     #[serde(default = "default_position")]
     pub position: String,
+    #[serde(default = "default_theme")]
+    pub theme: String,
 }
 
 fn default_language() -> String {
@@ -32,6 +36,10 @@ fn default_language() -> String {
 
 fn default_position() -> String {
     "bottom_right".to_string()
+}
+
+fn default_theme() -> String {
+    "dark".to_string()
 }
 
 impl Default for Config {
@@ -46,6 +54,7 @@ impl Default for Config {
             display_seconds: 8,
             language: default_language(),
             position: default_position(),
+            theme: default_theme(),
         }
     }
 }
@@ -67,6 +76,10 @@ impl Config {
         self.position = self.position.trim().to_string();
         if !POSITIONS.contains(&self.position.as_str()) {
             self.position = default_position();
+        }
+        self.theme = self.theme.trim().to_string();
+        if !THEMES.contains(&self.theme.as_str()) {
+            self.theme = default_theme();
         }
     }
 }

@@ -8,12 +8,15 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, TrayIconEvent};
-use tauri::{Emitter, Manager, PhysicalPosition, State, WebviewWindowBuilder, WindowEvent};
+use tauri::{
+    Emitter, Manager, PhysicalPosition, PhysicalSize, State, WebviewWindowBuilder, WindowEvent,
+};
 
 use config::{load_config, Config};
 
 const NOTIFICATION_WIDTH: u32 = 350;
-const NOTIFICATION_HEIGHT: u32 = 80;
+const NOTIFICATION_MIN_HEIGHT: u32 = 80;
+const NOTIFICATION_MAX_HEIGHT: u32 = 260;
 
 #[derive(Clone)]
 struct AppState {
@@ -110,6 +113,7 @@ fn show_notification_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, state:
     let duration_ms = config.display_seconds * 1000;
     let language = config.language.clone();
     let position = config.position.clone();
+    let theme = config.theme.clone();
     drop(config);
 
     let window = match app.get_webview_window("notification") {
@@ -124,14 +128,14 @@ fn show_notification_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, state:
             &position,
             &monitor,
             NOTIFICATION_WIDTH as i32,
-            NOTIFICATION_HEIGHT as i32,
+            NOTIFICATION_MIN_HEIGHT as i32,
         );
         let _ = window.set_position(PhysicalPosition::new(x, y));
     }
 
     let _ = app.emit(
         "show-notification",
-        json!({ "text": text, "duration_ms": duration_ms, "language": language }),
+        json!({ "text": text, "duration_ms": duration_ms, "language": language, "theme": theme }),
     );
     let _ = window.show();
 }
@@ -389,21 +393,27 @@ fn hide_notification(state: State<'_, AppState>) {
 }
 
 #[tauri::command]
-fn reposition_notification<R: tauri::Runtime>(
+fn resize_notification<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     state: State<'_, AppState>,
-    width: u32,
     height: u32,
 ) {
+    let width = NOTIFICATION_WIDTH;
+    let height = height.clamp(NOTIFICATION_MIN_HEIGHT, NOTIFICATION_MAX_HEIGHT);
+    let Some(window) = app.get_webview_window("notification") else {
+        return;
+    };
+    if window.set_size(PhysicalSize::new(width, height)).is_err() {
+        return;
+    }
+
     let position = match state.config.read() {
         Ok(config) => config.position.clone(),
         Err(_) => return,
     };
-    if let Some(window) = app.get_webview_window("notification") {
-        if let Ok(Some(monitor)) = window.current_monitor() {
-            let (x, y) = notification_origin(&position, &monitor, width as i32, height as i32);
-            let _ = window.set_position(PhysicalPosition::new(x, y));
-        }
+    if let Ok(Some(monitor)) = window.current_monitor() {
+        let (x, y) = notification_origin(&position, &monitor, width as i32, height as i32);
+        let _ = window.set_position(PhysicalPosition::new(x, y));
     }
 }
 
@@ -474,7 +484,7 @@ pub fn run() {
             cancel_snooze,
             get_snooze,
             hide_notification,
-            reposition_notification,
+            resize_notification,
             show_settings,
             show_pool,
             hide_main,

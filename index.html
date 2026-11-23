@@ -20,7 +20,7 @@
         </div>
       </div>
 
-      <section class="panel">
+      <section class="section pool-card">
         <div class="section-head">
           <h2 data-i18n="sections.pool"></h2>
           <span id="pool-count" class="count">0</span>
@@ -28,40 +28,42 @@
         <button id="open-pool" type="button" class="primary wide" data-i18n="actions.managePool"></button>
       </section>
 
-      <section class="panel">
-        <h2 data-i18n="sections.timing"></h2>
-        <label class="field">
-          <span>
-            <span data-i18n="fields.interval"></span>
-            <small data-i18n="fields.minutes"></small>
-          </span>
-          <input id="interval" type="number" min="1" max="1440" step="1" />
-        </label>
-        <label class="field">
-          <span>
-            <span data-i18n="fields.onScreen"></span>
-            <small data-i18n="fields.seconds"></small>
-          </span>
-          <input id="display" type="number" min="1" max="120" step="1" />
-        </label>
-      </section>
+      <div class="settings-grid">
+        <section class="section">
+          <h2 data-i18n="sections.timing"></h2>
+          <label class="field">
+            <span>
+              <span data-i18n="fields.interval"></span>
+              <small data-i18n="fields.minutes"></small>
+            </span>
+            <input id="interval" type="number" min="1" max="1440" step="1" />
+          </label>
+          <label class="field">
+            <span>
+              <span data-i18n="fields.onScreen"></span>
+              <small data-i18n="fields.seconds"></small>
+            </span>
+            <input id="display" type="number" min="1" max="120" step="1" />
+          </label>
+        </section>
 
-      <section class="panel">
-        <h2 data-i18n="sections.position"></h2>
-        <div id="position-grid" class="position-grid">
-          <button type="button" data-position="top_left">↖</button>
-          <button type="button" data-position="top_center">↑</button>
-          <button type="button" data-position="top_right">↗</button>
-          <button type="button" data-position="middle_left">←</button>
-          <button type="button" data-position="middle_center">•</button>
-          <button type="button" data-position="middle_right">→</button>
-          <button type="button" data-position="bottom_left">↙</button>
-          <button type="button" data-position="bottom_center">↓</button>
-          <button type="button" data-position="bottom_right">↘</button>
-        </div>
-      </section>
+        <section class="section">
+          <h2 data-i18n="sections.position"></h2>
+          <div id="position-grid" class="position-grid">
+            <button type="button" data-position="top_left">↖</button>
+            <button type="button" data-position="top_center">↑</button>
+            <button type="button" data-position="top_right">↗</button>
+            <button type="button" data-position="middle_left">←</button>
+            <button type="button" data-position="middle_center">•</button>
+            <button type="button" data-position="middle_right">→</button>
+            <button type="button" data-position="bottom_left">↙</button>
+            <button type="button" data-position="bottom_center">↓</button>
+            <button type="button" data-position="bottom_right">↘</button>
+          </div>
+        </section>
+      </div>
 
-      <section class="panel">
+      <section class="section snooze">
         <h2 data-i18n="sections.snooze"></h2>
         <label class="field">
           <span>
@@ -82,12 +84,24 @@
         <div id="snooze-state" class="snooze-state" role="status"></div>
       </section>
 
-      <section class="panel">
-        <label class="field">
-          <span data-i18n="sections.language"></span>
-          <select id="language" class="language-select"></select>
-        </label>
-      </section>
+      <div class="settings-grid">
+        <section class="section compact">
+          <label class="field">
+            <span data-i18n="sections.language"></span>
+            <select id="language" class="language-select"></select>
+          </label>
+        </section>
+
+        <section class="section compact">
+          <label class="field">
+            <span data-i18n="sections.theme"></span>
+            <select id="theme">
+              <option value="dark" data-i18n="themes.dark"></option>
+              <option value="light" data-i18n="themes.light"></option>
+            </select>
+          </label>
+        </section>
+      </div>
 
       <footer>
         <span id="status" class="status" role="status"></span>

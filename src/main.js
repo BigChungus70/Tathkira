@@ -10,6 +10,7 @@ let config = {
   display_seconds: 8,
   language: 'en',
   position: 'bottom_right',
+  theme: 'dark',
 };
 
 const byId = (id) => document.getElementById(id);
@@ -98,6 +99,12 @@ function fillLanguages() {
   select.value = config.language;
 }
 
+function applyTheme() {
+  const theme = config.theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+}
+
 async function persist() {
   try {
     const latest = await invoke('get_config');
@@ -107,6 +114,7 @@ async function persist() {
       display_seconds: config.display_seconds,
       language: config.language,
       position: config.position,
+      theme: config.theme,
     };
     await invoke('save_config', { config: next });
     config = next;
@@ -120,6 +128,8 @@ function render() {
   byId('pool-count').textContent = String(config.texts.length);
   byId('interval').value = String(config.interval_minutes);
   byId('display').value = String(config.display_seconds);
+  byId('theme').value = config.theme === 'light' ? 'light' : 'dark';
+  applyTheme();
 
   document.querySelectorAll('[data-position]').forEach((button) => {
     button.classList.toggle('active', button.dataset.position === config.position);
@@ -205,8 +215,15 @@ byId('language').addEventListener('change', (event) => {
   }, 0);
 });
 
+byId('theme').addEventListener('change', async (event) => {
+  config.theme = event.target.value === 'light' ? 'light' : 'dark';
+  applyTheme();
+  await persist();
+});
+
 try {
   config = await invoke('get_config');
+  applyTheme();
 } catch (error) {
   setStatus(i18n.t('status.loadFailed', { error }));
 }
