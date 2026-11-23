@@ -3,6 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 import './styles.css';
 
 const i18n = window.TathkiraI18n;
+const THEME_CHOICES = ['system', 'dark', 'light'];
 
 let config = {
   texts: [],
@@ -11,14 +12,17 @@ let config = {
   language: 'en',
   position: 'bottom_right',
   theme: 'dark',
+  launch_on_startup: false,
 };
 
 const byId = (id) => document.getElementById(id);
 const statusEl = byId('status');
+const appEl = document.querySelector('.app');
+const languageSelect = byId('language-select');
+const languageTrigger = byId('language-trigger');
+const languageMenu = byId('language-menu');
+const languageValue = byId('language-value');
 let statusTimer;
-
-window.addEventListener('error', (event) => setStatus(String(event.message)));
-window.addEventListener('unhandledrejection', (event) => setStatus(String(event.reason)));
 let snoozeTimer;
 let remaining = 0;
 let wasSnoozed = false;
@@ -29,6 +33,10 @@ function setStatus(message) {
   statusTimer = setTimeout(() => {
     statusEl.textContent = '';
   }, 1800);
+}
+
+function setPoolBlur(active) {
+  appEl.classList.toggle('pool-open', active);
 }
 
 function formatRemaining(seconds) {
@@ -87,22 +95,76 @@ function applyTranslations() {
   });
 }
 
+function languageLabel(code) {
+  const language = i18n.languages().find((item) => item.code === code);
+  return language ? language.label : code.toUpperCase();
+}
+
+function setLanguageValue() {
+  languageValue.textContent = languageLabel(config.language);
+}
+
 function fillLanguages() {
-  const select = byId('language');
-  select.replaceChildren();
+  languageMenu.replaceChildren();
   i18n.languages().forEach((language) => {
-    const option = document.createElement('option');
-    option.value = language.code;
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'select-option';
+    option.dataset.language = language.code;
+    option.setAttribute('role', 'option');
     option.textContent = language.label;
-    select.append(option);
+    option.addEventListener('click', () => selectLanguage(language.code));
+    languageMenu.append(option);
   });
-  select.value = config.language;
+  setLanguageValue();
+  syncLanguageSelection();
+}
+
+function syncLanguageSelection() {
+  languageMenu.querySelectorAll('[data-language]').forEach((option) => {
+    const selected = option.dataset.language === config.language;
+    option.classList.toggle('selected', selected);
+    option.setAttribute('aria-selected', String(selected));
+  });
+}
+
+function closeLanguageMenu() {
+  languageMenu.hidden = true;
+  languageTrigger.setAttribute('aria-expanded', 'false');
+}
+
+function openLanguageMenu() {
+  syncLanguageSelection();
+  languageMenu.hidden = false;
+  languageTrigger.setAttribute('aria-expanded', 'true');
+  const selected = languageMenu.querySelector('.selected') || languageMenu.firstElementChild;
+  if (selected) selected.focus();
+}
+
+async function selectLanguage(next) {
+  closeLanguageMenu();
+  if (next === config.language) return;
+  try {
+    await i18n.load(next);
+    config.language = next;
+    applyTranslations();
+    updateSnoozeState(remaining);
+    render();
+    await persist();
+  } catch (error) {
+    await i18n.load(config.language);
+    applyTranslations();
+    updateSnoozeState(remaining);
+    setStatus(String(error));
+  }
+}
+
+function normalizedTheme(theme) {
+  return THEME_CHOICES.includes(theme) ? theme : 'dark';
 }
 
 function applyTheme() {
-  const theme = config.theme === 'light' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = theme;
-  document.documentElement.style.colorScheme = theme;
+  document.documentElement.dataset.theme = normalizedTheme(config.theme);
 }
 
 async function persist() {
@@ -114,7 +176,8 @@ async function persist() {
       display_seconds: config.display_seconds,
       language: config.language,
       position: config.position,
-      theme: config.theme,
+      theme: normalizedTheme(config.theme),
+      launch_on_startup: config.launch_on_startup,
     };
     await invoke('save_config', { config: next });
     config = next;
@@ -124,11 +187,35 @@ async function persist() {
   }
 }
 
+function bindNumericInput(id, min, max, key) {
+  const input = byId(id);
+  input.addEventListener('input', () => {
+    const digits = input.value.replace(/[^\d]/g, '');
+    if (digits !== input.value) input.value = digits;
+  });
+  input.addEventListener('change', async () => {
+    const value = Number(input.value);
+    if (!Number.isFinite(value)) {
+      input.value = String(config[key]);
+      return;
+    }
+    config[key] = Math.min(max, Math.max(min, Math.round(value)));
+    input.value = String(config[key]);
+    await persist();
+  });
+}
+
 function render() {
   byId('pool-count').textContent = String(config.texts.length);
   byId('interval').value = String(config.interval_minutes);
   byId('display').value = String(config.display_seconds);
-  byId('theme').value = config.theme === 'light' ? 'light' : 'dark';
+  byId('launch-on-startup').checked = config.launch_on_startup;
+  setLanguageValue();
+  syncLanguageSelection();
+  const theme = normalizedTheme(config.theme);
+  document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.themeChoice === theme);
+  });
   applyTheme();
 
   document.querySelectorAll('[data-position]').forEach((button) => {
@@ -136,23 +223,37 @@ function render() {
   });
 }
 
+async function applySnooze(minutes) {
+  const value = Number(minutes);
+  if (!Number.isFinite(value) || value <= 0) return;
+  const clamped = Math.min(1440, Math.max(1, Math.round(value)));
+  try {
+    await invoke('snooze', { minutes: clamped });
+    await pollSnooze();
+    setStatus(i18n.t('status.snoozed', { minutes: clamped }));
+  } catch (error) {
+    setStatus(i18n.t('status.snoozeFailed', { error }));
+  }
+}
+
+function snooze() {
+  return applySnooze(byId('snooze-minutes').value);
+}
+
+window.addEventListener('error', (event) => setStatus(String(event.message)));
+window.addEventListener('unhandledrejection', (event) => setStatus(String(event.reason)));
 byId('win-minimize').addEventListener('click', () => invoke('hide_main'));
 byId('open-pool').addEventListener('click', () => invoke('show_pool'));
+bindNumericInput('interval', 1, 1440, 'interval_minutes');
+bindNumericInput('display', 1, 120, 'display_seconds');
 
-byId('interval').addEventListener('change', async (event) => {
-  const value = Number(event.target.value);
-  if (!Number.isFinite(value)) return;
-  config.interval_minutes = Math.min(1440, Math.max(1, Math.round(value)));
-  event.target.value = String(config.interval_minutes);
-  await persist();
+byId('snooze-minutes').addEventListener('input', (event) => {
+  const digits = event.target.value.replace(/[^\d]/g, '');
+  if (digits !== event.target.value) event.target.value = digits;
 });
 
-byId('display').addEventListener('change', async (event) => {
-  const value = Number(event.target.value);
-  if (!Number.isFinite(value)) return;
-  config.display_seconds = Math.min(120, Math.max(1, Math.round(value)));
-  event.target.value = String(config.display_seconds);
-  await persist();
+document.querySelectorAll('[data-minutes]').forEach((button) => {
+  button.addEventListener('click', () => applySnooze(button.dataset.minutes));
 });
 
 document.querySelectorAll('[data-position]').forEach((button) => {
@@ -162,24 +263,6 @@ document.querySelectorAll('[data-position]').forEach((button) => {
     await persist();
   });
 });
-
-document.querySelectorAll('[data-minutes]').forEach((button) => {
-  button.addEventListener('click', () => {
-    byId('snooze-minutes').value = button.dataset.minutes;
-  });
-});
-
-async function snooze() {
-  const minutes = Math.min(1440, Math.max(1, Math.round(Number(byId('snooze-minutes').value))));
-  if (!Number.isFinite(minutes)) return;
-  try {
-    await invoke('snooze', { minutes });
-    await pollSnooze();
-    setStatus(i18n.t('status.snoozed', { minutes }));
-  } catch (error) {
-    setStatus(i18n.t('status.snoozeFailed', { error }));
-  }
-}
 
 byId('snooze-apply').addEventListener('click', snooze);
 byId('snooze-cancel').addEventListener('click', async () => {
@@ -193,32 +276,65 @@ byId('snooze-cancel').addEventListener('click', async () => {
 });
 
 byId('quit').addEventListener('click', () => invoke('quit_app'));
-byId('language').addEventListener('change', (event) => {
-  const select = event.target;
-  const next = select.value;
-  select.blur();
-  setTimeout(async () => {
+
+byId('launch-on-startup').addEventListener('change', async (event) => {
+  const enabled = event.target.checked;
+  const previous = config.launch_on_startup;
+  config.launch_on_startup = enabled;
+  render();
+  try {
+    await persist();
+    await invoke('set_autostart', { enabled });
+  } catch (error) {
+    config.launch_on_startup = previous;
+    render();
     try {
-      await i18n.load(next);
-      config.language = next;
-      applyTranslations();
-      updateSnoozeState(remaining);
-      render();
       await persist();
-    } catch (error) {
-      select.value = config.language;
-      await i18n.load(config.language);
-      applyTranslations();
-      updateSnoozeState(remaining);
-      setStatus(String(error));
+    } catch (retryError) {
+      setStatus(i18n.t('status.saveFailed', { error: retryError }));
     }
-  }, 0);
+    setStatus(i18n.t('status.autostartFailed', { error }));
+  }
 });
 
-byId('theme').addEventListener('change', async (event) => {
-  config.theme = event.target.value === 'light' ? 'light' : 'dark';
-  applyTheme();
-  await persist();
+languageTrigger.addEventListener('click', () => {
+  if (languageMenu.hidden) openLanguageMenu();
+  else closeLanguageMenu();
+});
+
+languageTrigger.addEventListener('keydown', (event) => {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    openLanguageMenu();
+  }
+});
+
+languageMenu.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeLanguageMenu();
+    languageTrigger.focus();
+    return;
+  }
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+  event.preventDefault();
+  const options = [...languageMenu.querySelectorAll('.select-option')];
+  const current = options.indexOf(document.activeElement);
+  const next = event.key === 'ArrowDown'
+    ? Math.min(options.length - 1, current + 1)
+    : Math.max(0, current - 1);
+  if (options[next]) options[next].focus();
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!languageSelect.contains(event.target)) closeLanguageMenu();
+});
+
+document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+  button.addEventListener('click', async () => {
+    config.theme = button.dataset.themeChoice;
+    render();
+    await persist();
+  });
 });
 
 try {
@@ -253,7 +369,14 @@ async function reloadFromBackend(showSaved) {
 try {
   await listen('pool-changed', () => reloadFromBackend(true));
   await listen('window-shown', async (event) => {
-    if (event.payload === 'main') await reloadFromBackend(false);
+    if (event.payload === 'pool') setPoolBlur(true);
+    if (event.payload === 'main') {
+      setPoolBlur(false);
+      await reloadFromBackend(false);
+    }
+  });
+  await listen('window-hidden', (event) => {
+    if (event.payload === 'pool' || event.payload === 'main') setPoolBlur(false);
   });
 } catch (error) {
   setStatus(String(error));

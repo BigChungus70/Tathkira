@@ -1,17 +1,19 @@
 {
   "app": {
-    "title": "تذكيرة",
-    "subtitle": "تذكيرات هادئة، حسب جدولك."
+    "title": "تذكرة",
+    "subtitle": "وَاذْكُر رَّبَّكَ إِذَا نَسِيتَ"
   },
   "sections": {
     "pool": "مجموعة الأذكار",
     "timing": "التوقيت",
-    "snooze": "التأجيل",
+    "snooze": "توقف مؤقت",
     "position": "مكان الإشعار",
     "language": "اللغة",
     "theme": "المظهر"
   },
   "themes": {
+    "label": "المظهر",
+    "system": "النظام",
     "dark": "داكن",
     "light": "فاتح"
   },
@@ -21,9 +23,11 @@
     "minutes": "دقيقة",
     "onScreen": "مدة الظهور",
     "seconds": "ثانية",
-    "snoozeFor": "تأجيل لمدة"
+    "snoozeFor": "إيقاف لمدة",
+    "launchOnStartup": "تشغيل تلقائي"
   },
   "presets": {
+    "quick": "سريع",
     "m15": "١٥د",
     "m30": "٣٠د",
     "h1": "١س"
@@ -31,30 +35,30 @@
   "actions": {
     "add": "إضافة",
     "edit": "تعديل",
-    "save": "حفظ",
     "removeShort": "إزالة",
-    "managePool": "إدارة المجموعة",
-    "snooze": "تأجيل",
-    "cancelSnooze": "إلغاء التأجيل",
+    "managePool": "إدارة الأذكار",
+    "snooze": "إيقاف مؤقت",
+    "cancelSnooze": "إلغاء الإيقاف",
     "hide": "إخفاء",
     "done": "تم",
-    "quit": "إغلاق"
+    "quit": "إطفاء"
   },
   "tray": {
     "settings": "الإعدادات",
-    "snooze15": "تأجيل ١٥ دقيقة",
-    "snooze60": "تأجيل ساعة"
+    "snooze15": "إيقاف ١٥ دقيقة",
+    "snooze60": "إيقاف ساعة"
   },
   "status": {
     "saved": "تم الحفظ",
     "saveFailed": "فشل الحفظ: {error}",
     "loadFailed": "تعذّر تحميل الإعدادات: {error}",
-    "snoozeFailed": "فشل التأجيل: {error}",
-    "snoozed": "تم التأجيل لمدة {minutes} دقيقة",
-    "snoozeCancelled": "تم إلغاء التأجيل",
-    "snoozeRemaining": "مؤجل — متبقي {time}",
-    "notSnoozed": "غير مؤجل",
-    "snoozeEnded": "انتهى التأجيل",
-    "emptyText": "أدخل ذكرًا أولًا"
+    "snoozeFailed": "فشل الإيقاف المؤقت: {error}",
+    "snoozed": "تم الإيقاف المؤقت لمدة {minutes} دقيقة",
+    "snoozeCancelled": "تم إلغاء الإيقاف المؤقت",
+    "snoozeRemaining": "موقف مؤفتاً — متبقي {time}",
+    "notSnoozed": "غير موقف مؤقتاً",
+    "snoozeEnded": "انتهى الإيقاف المؤقت",
+    "emptyText": "أدخل ذكرًا أولًا",
+    "autostartFailed": "فشل التشغيل التلقائي: {error}"
   }
 }

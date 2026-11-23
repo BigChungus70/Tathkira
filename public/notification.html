@@ -6,16 +6,25 @@
       :root {
         color-scheme: dark;
         font-family: 'Segoe UI Variable', 'Segoe UI', ui-sans-serif, system-ui, Tahoma, 'Geeza Pro', sans-serif;
-        --card-bg: #181a17;
-        --card-text: #f5f1e6;
-        --accent: #d2b27a;
+        --card-bg: #191918;
+        --card-text: #eeeeec;
+        --accent: #5b5bd6;
       }
 
       :root[data-theme='light'] {
         color-scheme: light;
-        --card-bg: #fffdf7;
-        --card-text: #262a24;
-        --accent: #8a6b32;
+        --card-bg: #ffffff;
+        --card-text: #21201c;
+        --accent: #5b5bd6;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root[data-theme='system'] {
+          color-scheme: light;
+          --card-bg: #ffffff;
+          --card-text: #21201c;
+          --accent: #5b5bd6;
+        }
       }
 
       * {
@@ -85,6 +94,7 @@
     <script>
       (function () {
         const i18n = window.TathkiraI18n;
+        const THEME_CHOICES = ['system', 'dark', 'light'];
         const card = document.getElementById('card');
         const textEl = document.getElementById('text');
         let hideTimer = null;
@@ -108,13 +118,34 @@
           return /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/u.test(value) ? 'rtl' : 'ltr';
         }
 
-        function measureTextHeight() {
+        function measureTextWidth() {
+          const style = getComputedStyle(textEl);
+          const probe = document.createElement('span');
+          probe.style.position = 'fixed';
+          probe.style.left = '-9999px';
+          probe.style.top = '0';
+          probe.style.display = 'inline-block';
+          probe.style.fontFamily = style.fontFamily;
+          probe.style.fontSize = style.fontSize;
+          probe.style.fontWeight = style.fontWeight;
+          probe.style.lineHeight = style.lineHeight;
+          probe.style.letterSpacing = style.letterSpacing;
+          probe.style.whiteSpace = 'pre';
+          probe.style.visibility = 'hidden';
+          probe.textContent = textEl.textContent;
+          document.body.appendChild(probe);
+          const width = probe.getBoundingClientRect().width;
+          probe.remove();
+          return width;
+        }
+
+        function measureTextHeight(contentWidth) {
           const style = getComputedStyle(textEl);
           const probe = document.createElement('div');
           probe.style.position = 'fixed';
           probe.style.left = '-9999px';
           probe.style.top = '0';
-          probe.style.width = Math.max(textEl.getBoundingClientRect().width, 240) + 'px';
+          probe.style.width = Math.max(contentWidth, 120) + 'px';
           probe.style.fontFamily = style.fontFamily;
           probe.style.fontSize = style.fontSize;
           probe.style.fontWeight = style.fontWeight;
@@ -132,16 +163,23 @@
 
         function resizeToText() {
           const api = window.__TAURI__;
-          const height = Math.max(80, Math.ceil(measureTextHeight() + 36));
+          const horizontalSpacing = 48;
+          const width = Math.max(
+            240,
+            Math.min(350, Math.ceil(measureTextWidth() + horizontalSpacing))
+          );
+          const contentWidth = Math.max(120, width - horizontalSpacing);
+          const height = Math.max(80, Math.ceil(measureTextHeight(contentWidth) + 36));
           if (!api || !api.core || !api.core.invoke) return;
-          api.core.invoke('resize_notification', { height: height }).catch(function () {});
+          api.core
+            .invoke('resize_notification', { width: width, height: height })
+            .catch(function () {});
         }
 
         function show(payload) {
           if (!payload) return;
-          const theme = payload.theme === 'light' ? 'light' : 'dark';
+          const theme = THEME_CHOICES.indexOf(payload.theme) >= 0 ? payload.theme : 'dark';
           document.documentElement.dataset.theme = theme;
-          document.documentElement.style.colorScheme = theme;
           const value = payload.text || '';
           const direction = textDirection(value);
           textEl.textContent = value;

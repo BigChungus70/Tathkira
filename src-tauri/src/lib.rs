@@ -11,10 +11,13 @@ use tauri::tray::{MouseButton, TrayIconEvent};
 use tauri::{
     Emitter, Manager, PhysicalPosition, PhysicalSize, State, WebviewWindowBuilder, WindowEvent,
 };
+#[cfg(desktop)]
+use tauri_plugin_autostart::ManagerExt;
 
-use config::{load_config, Config};
+use config::{apply_installer_autostart, load_config, Config};
 
-const NOTIFICATION_WIDTH: u32 = 350;
+const NOTIFICATION_MIN_WIDTH: u32 = 240;
+const NOTIFICATION_MAX_WIDTH: u32 = 350;
 const NOTIFICATION_MIN_HEIGHT: u32 = 80;
 const NOTIFICATION_MAX_HEIGHT: u32 = 260;
 
@@ -91,11 +94,38 @@ fn hide_notification_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     }
 }
 
+fn hide_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, label: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.hide();
+        let _ = app.emit("window-hidden", label.to_string());
+    }
+}
+
+fn sync_autostart<R: tauri::Runtime>(app: &tauri::AppHandle<R>, enabled: bool) {
+    #[cfg(desktop)]
+    {
+        let manager = app.autolaunch();
+        let current = manager.is_enabled().unwrap_or(false);
+        if current != enabled {
+            let result = if enabled {
+                manager.enable()
+            } else {
+                manager.disable()
+            };
+            if let Err(error) = result {
+                eprintln!("autostart sync failed: {error}");
+            }
+        }
+    }
+    #[cfg(not(desktop))]
+    {
+        let _ = (app, enabled);
+    }
+}
+
 fn hide_main_and_pool<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     for label in ["main", "pool"] {
-        if let Some(window) = app.get_webview_window(label) {
-            let _ = window.hide();
-        }
+        hide_window(app, label);
     }
 }
 
@@ -127,7 +157,7 @@ fn show_notification_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>, state:
         let (x, y) = notification_origin(
             &position,
             &monitor,
-            NOTIFICATION_WIDTH as i32,
+            NOTIFICATION_MAX_WIDTH as i32,
             NOTIFICATION_MIN_HEIGHT as i32,
         );
         let _ = window.set_position(PhysicalPosition::new(x, y));
@@ -177,7 +207,7 @@ fn start_timer<R: tauri::Runtime>(app: tauri::AppHandle<R>, state: AppState) {
             let (interval, display) = {
                 let config = state.config.read().unwrap();
                 (
-                    Duration::from_secs(config.interval_minutes),
+                    Duration::from_secs(config.interval_minutes * 60),
                     Duration::from_secs(config.display_seconds),
                 )
             };
@@ -332,6 +362,30 @@ fn get_config(state: State<'_, AppState>) -> Result<Config, String> {
     Ok(config.clone())
 }
 
+fn reposition_visible_notification<R: tauri::Runtime>(app: &tauri::AppHandle<R>, state: &AppState) {
+    let Some(window) = app.get_webview_window("notification") else {
+        return;
+    };
+    if !window.is_visible().unwrap_or(false) {
+        return;
+    }
+    let Ok(size) = window.outer_size() else {
+        return;
+    };
+    let Ok(config) = state.config.read() else {
+        return;
+    };
+    if let Ok(Some(monitor)) = window.current_monitor() {
+        let (x, y) = notification_origin(
+            &config.position,
+            &monitor,
+            size.width as i32,
+            size.height as i32,
+        );
+        let _ = window.set_position(PhysicalPosition::new(x, y));
+    }
+}
+
 #[tauri::command]
 fn save_config<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
@@ -346,6 +400,7 @@ fn save_config<R: tauri::Runtime>(
         current.language.clone()
     };
     refresh_tray(&app, &language);
+    reposition_visible_notification(&app, &state);
     app.emit("pool-changed", ()).map_err(|error| error.to_string())?;
     Ok(())
 }
@@ -396,9 +451,10 @@ fn hide_notification(state: State<'_, AppState>) {
 fn resize_notification<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     state: State<'_, AppState>,
+    width: u32,
     height: u32,
 ) {
-    let width = NOTIFICATION_WIDTH;
+    let width = width.clamp(NOTIFICATION_MIN_WIDTH, NOTIFICATION_MAX_WIDTH);
     let height = height.clamp(NOTIFICATION_MIN_HEIGHT, NOTIFICATION_MAX_HEIGHT);
     let Some(window) = app.get_webview_window("notification") else {
         return;
@@ -441,6 +497,42 @@ fn hide_main<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
 }
 
 #[tauri::command]
+fn hide_pool<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
+    hide_window(&app, "pool");
+}
+
+#[tauri::command]
+fn set_autostart<R: tauri::Runtime>(app: tauri::AppHandle<R>, enabled: bool) -> Result<(), String> {
+    #[cfg(desktop)]
+    {
+        let manager = app.autolaunch();
+        if enabled {
+            manager.enable().map_err(|error| error.to_string())
+        } else {
+            manager.disable().map_err(|error| error.to_string())
+        }
+    }
+    #[cfg(not(desktop))]
+    {
+        let _ = (app, enabled);
+        Ok(())
+    }
+}
+
+#[tauri::command]
+fn get_autostart<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> Result<bool, String> {
+    #[cfg(desktop)]
+    {
+        app.autolaunch().is_enabled().map_err(|error| error.to_string())
+    }
+    #[cfg(not(desktop))]
+    {
+        let _ = app;
+        Ok(false)
+    }
+}
+
+#[tauri::command]
 fn quit_app<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
     app.exit(0);
 }
@@ -448,6 +540,9 @@ fn quit_app<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            open_configured_window(app, "main");
+        }))
         .on_window_event(|window, event| {
             if matches!(window.label(), "main" | "pool") {
                 if let WindowEvent::CloseRequested { api, .. } = event {
@@ -455,14 +550,26 @@ pub fn run() {
                     if window.label() == "main" {
                         hide_main_and_pool(window.app_handle());
                     } else {
-                        let _ = window.hide();
+                        hide_window(window.app_handle(), "pool");
                     }
                 }
             }
         })
         .setup(|app| {
-            let config = load_config(app.handle())?;
+            let mut config = load_config(app.handle())?;
+            apply_installer_autostart(app.handle(), &mut config);
             let language = config.language.clone();
+            let launch_on_startup = config.launch_on_startup;
+
+            #[cfg(desktop)]
+            app.handle().plugin(
+                tauri_plugin_autostart::Builder::new()
+                    .app_name("Tathkira")
+                    .build(),
+            )?;
+
+            sync_autostart(app.handle(), launch_on_startup);
+
             let state = AppState {
                 config: Arc::new(RwLock::new(config)),
                 snoozed_until: Arc::new(RwLock::new(None)),
@@ -488,6 +595,9 @@ pub fn run() {
             show_settings,
             show_pool,
             hide_main,
+            hide_pool,
+            set_autostart,
+            get_autostart,
             quit_app
         ])
         .run(tauri::generate_context!())
